@@ -20,7 +20,13 @@ static const int INIT_PROTO_VERSION = 209;
 static const int GETHEADERS_VERSION = 31800;
 
 //! disconnect from peers older than this proto version
-static const int MIN_PEER_PROTO_VERSION = 70003;
+// Kratom: the real live network runs Kratom's own 2014-era client, which reports
+// PROTOCOL_VERSION 70002 (Kratom/src/version.h) - every real peer on that network will
+// report exactly this, not an outlier. Lowered from Dogecoin's own 70003 floor, which
+// rejected the entire real Kratom network outright (confirmed via a live debug.log:
+// "peer=N using obsolete version 70002; disconnecting" against every peer found via the
+// seed.kratom.pw DNS seed).
+static const int MIN_PEER_PROTO_VERSION = 70002;
 
 //! nTime field added to CAddress, starting with this version;
 //! if possible, avoid requesting addresses nodes older than this
