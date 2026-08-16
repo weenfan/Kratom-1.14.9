@@ -45,16 +45,16 @@ QString BitcoinUnits::name(int unit)
 {
     switch(unit)
     {
-    // Kratom's own real source never had a multi-denomination display (this whole
-    // BitcoinUnits feature postdates it) - its only precedent is the plain unit name
-    // "Kratoms" (bitcoinunits.cpp equivalent in Kratom/src/qt/bitcoinunits.cpp). "KRAT"
-    // here is an invented short form for the M/k/m/u-prefixed variants, not sourced -
-    // change it if you want something else.
-    case MBTC: return QString("MKRAT");
-    case kBTC: return QString("kKRAT");
-    case BTC: return QString("KRAT");
-    case mBTC: return QString("mKRAT");
-    case uBTC: return QString::fromUtf8("μKRAT");
+    // KTO is the real ticker used across the Indocoin/Kratom ecosystem (the Stellar-side
+    // pegged asset code - see project_kratom_1149_dogecoin_fork memory). Kratom's own
+    // 2014-era client never had this multi-denomination display at all, so the M/k/m/u
+    // prefix combos below aren't independently sourced from anything - just applying the
+    // real base ticker to the same pattern Dogecoin's own code already used.
+    case MBTC: return QString("MKTO");
+    case kBTC: return QString("kKTO");
+    case BTC: return QString("KTO");
+    case mBTC: return QString("mKTO");
+    case uBTC: return QString::fromUtf8("μKTO");
     default: return QString("???");
     }
 }
