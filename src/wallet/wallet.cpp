@@ -156,7 +156,12 @@ void CWallet::DeriveNewChildKey(CKeyMetadata& metadata, CKey& secret)
         // childIndex | BIP32_HARDENED_KEY_LIMIT = derive childIndex in hardened child-index-range
         // example: 1 | BIP32_HARDENED_KEY_LIMIT == 0x80000001 == 2147483649
         externalChainChildKey.Derive(childKey, hdChain.nExternalChainCounter | BIP32_HARDENED_KEY_LIMIT);
-        metadata.hdKeypath = "m/0'/3'/" + std::to_string(hdChain.nExternalChainCounter) + "'";
+        // Bug fix (confirmed 2026-08-16): this string previously said "m/0'/3'/N'", but the
+        // actual Derive() calls above (both using bare BIP32_HARDENED_KEY_LIMIT, i.e. index 0)
+        // only ever compute m/0'/0'/N' - matching this function's own top comment. The "3" never
+        // corresponded to any real derivation step, just a wrong label in dumpwallet's output.
+        // Verified against a real generated address (m/0'/0'/11' -> KAYhRFttLrXr8P6cSKuXb1tw7oKjtWEhfj).
+        metadata.hdKeypath = "m/0'/0'/" + std::to_string(hdChain.nExternalChainCounter) + "'";
         metadata.hdMasterKeyID = hdChain.masterKeyID;
         // increment childkey index
         hdChain.nExternalChainCounter++;
