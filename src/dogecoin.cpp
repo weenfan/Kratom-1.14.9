@@ -126,25 +126,24 @@ bool CheckAuxPowProofOfWork(const CBlockHeader& block, const Consensus::Params& 
 
 CAmount GetDogecoinBlockSubsidy(int nHeight, const Consensus::Params& consensusParams, uint256 prevHash)
 {
-    int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
-
-    if (!consensusParams.fSimplifiedRewards)
-    {
-        // Old-style rewards derived from the previous block hash
-        const std::string cseed_str = prevHash.ToString().substr(7, 7);
-        const char* cseed = cseed_str.c_str();
-        char* endp = NULL;
-        long seed = strtol(cseed, &endp, 16);
-        CAmount maxReward = (1000000 >> halvings) - 1;
-        int rand = generateMTRandom(seed, maxReward);
-
-        return (1 + rand) * COIN;
-    } else if (nHeight < (6 * consensusParams.nSubsidyHalvingInterval)) {
-        // New-style constant rewards for each halving interval
-        return (500000 * COIN) >> halvings;
-    } else {
-        // Constant inflation
+    // Kratom: flat step schedule by height (Kratom/src/main.cpp GetBlockValue), not a
+    // halving-interval schedule - consensusParams.nSubsidyHalvingInterval and prevHash are
+    // both unused here (kept as params only for call-signature compatibility with the rest of
+    // this codebase). No randomness, no dependence on the previous block hash.
+    if (nHeight < 500000) {
+        return 20000 * COIN;
+    } else if (nHeight < 1000000) {
         return 10000 * COIN;
+    } else if (nHeight < 1500000) {
+        return 5000 * COIN;
+    } else if (nHeight < 2000000) {
+        return 2500 * COIN;
+    } else if (nHeight < 2500000) {
+        return 1400 * COIN;
+    } else {
+        // Flat tail forever past height 2,500,000 - matches Kratom's real source exactly
+        // (no further step down, no halving).
+        return 500 * COIN;
     }
 }
 

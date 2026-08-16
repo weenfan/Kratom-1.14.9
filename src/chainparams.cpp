@@ -70,26 +70,32 @@ static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits
 class CMainParams : public CChainParams {
 private:
     Consensus::Params digishieldConsensus;
-    Consensus::Params auxpowConsensus;
+    Consensus::Params matureConsensus;
 public:
     CMainParams() {
         strNetworkID = "main";
 
-        // Blocks 0 - 144999 are conventional difficulty calculation
-        consensus.nSubsidyHalvingInterval = 100000;
+        // Kratom: heights 0-59 use the old 4-hour retarget (genesis is height 0, so this
+        // tier is barely exercised in practice, but kept faithful to the real chain).
+        consensus.nSubsidyHalvingInterval = 100000; // unused - GetDogecoinBlockSubsidy() below
+                                                     // ignores this and uses Kratom's fixed
+                                                     // height-threshold schedule instead
         consensus.nMajorityEnforceBlockUpgrade = 1500;
         consensus.nMajorityRejectBlockOutdated = 1900;
         consensus.nMajorityWindow = 2000;
-        // BIP34 is never enforced in Dogecoin v2 blocks, so we enforce from v3
-        consensus.BIP34Height = 1034383;
-        consensus.BIP34Hash = uint256S("0x80d1364201e5df97e696c03bdd24dc885e8617b9de51e453c10a4f629b1e797a");
-        consensus.BIP65Height = 3464751; // 34cd2cbba4ba366f47e5aa0db5f02c19eba2adf679ceb6653ac003bdc9a0ef1f - first v4 block after the last v3 block
-        consensus.BIP66Height = 1034383; // 80d1364201e5df97e696c03bdd24dc885e8617b9de51e453c10a4f629b1e797a - this is the last block that could be v2, 1900 blocks past the last v2 block
-        consensus.powLimit = uint256S("0x00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 20;
-        consensus.nPowTargetTimespan = 4 * 60 * 60; // pre-digishield: 4 hours
-        consensus.nPowTargetSpacing = 60; // 1 minute
+        // Kratom's real chain never adopted BIP34/65/66 (its source predates and never added
+        // them) - disabled (pushed effectively to infinity) rather than reusing Dogecoin's own
+        // activation heights, which belong to a completely different chain's history and would
+        // wrongly reject real Kratom blocks once reached.
+        consensus.BIP34Height = 999999999;
+        consensus.BIP34Hash = uint256();
+        consensus.BIP65Height = 999999999;
+        consensus.BIP66Height = 999999999;
+        consensus.powLimit = uint256S("0x00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 20; same as Kratom's own bnProofOfWorkLimit
+        consensus.nPowTargetTimespan = 4 * 60 * 60; // Kratom: old retarget (4hrs), heights <60
+        consensus.nPowTargetSpacing = 60; // Kratom: 1 minute block target
         consensus.fDigishieldDifficultyCalculation = false;
-        consensus.nCoinbaseMaturity = 30;
+        consensus.nCoinbaseMaturity = 30; // Kratom: COINBASE_MATURITY
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowAllowDigishieldMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
@@ -99,46 +105,56 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601; // January 1, 2008
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999; // December 31, 2008
 
-        // Deployment of BIP68, BIP112, and BIP113.
-        // XXX: BIP heights and hashes all need to be updated to Dogecoin values
+        // CSV/SegWit deployments left inert (SegWit nTimeout=0 disables it outright; CSV's
+        // window is already in the past relative to any real sync) - Kratom's real chain never
+        // signaled either, so leaving these as harmless no-ops is correct, not an oversight.
         consensus.vDeployments[Consensus::DEPLOYMENT_CSV].bit = 0;
         consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = 1462060800; // May 1st, 2016
         consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = 1493596800; // May 1st, 2017
 
-        // Deployment of SegWit (BIP141, BIP143, and BIP147)
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].bit = 1;
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime = 1479168000; // November 15th, 2016.
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 0; // Disabled
 
-        // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000e993d2aa86cf246a49b"); // 5,050,000
+        // No known chainwork/assume-valid floor for Kratom's real chain - don't assert
+        // Dogecoin's own values here, they're meaningless (and would be wrong) for this chain.
+        consensus.nMinimumChainWork = uint256();
+        consensus.defaultAssumeValid = uint256();
 
-        // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xe7d4577405223918491477db725a393bcfc349d8ee63b0a4fde23cbfbfd81dea"); // 5,050,000
-
-        // AuxPoW parameters
-        consensus.nAuxpowChainId = 0x0062; // 98 - Josh Wise!
+        // AuxPoW: Kratom's real chain never merge-mined, so legacy (non-AuxPoW) blocks must
+        // stay valid at every height, forever - fAllowLegacyBlocks never flips to false and
+        // there is no AuxPoW tier below (see the 2-tier assembly further down).
+        consensus.nAuxpowChainId = 0x0062; // inert - never checked, since AuxPoW is never required
         consensus.fStrictChainId = true;
         consensus.fAllowLegacyBlocks = true;
         consensus.nHeightEffective = 0;
 
-        // Blocks 145000 - 371336 are Digishield without AuxPoW
+        // Kratom: height 60+ (nDiffChangeTarget in the original source) switches to a
+        // DigiShield-style per-block retarget: 1-minute spacing, amplitude filter /8,
+        // bounds [-25%,+50%] of target. Coinbase maturity stays 30 here, NOT 240 - Kratom's
+        // real maturity switch is a separate, later height (145000, see matureConsensus
+        // below), independent of the difficulty-algorithm switch at 60. This mirrors an
+        // actual inconsistency in Kratom's own shipped source (main.h: COINBASE_MATURITY_SWITCH
+        // = 145000, decoupled from nDiffChangeTarget = 60) - reproduced faithfully here since
+        // that's what the real chain's history was actually validated against, not a bug in
+        // this port.
         digishieldConsensus = consensus;
-        digishieldConsensus.nHeightEffective = 145000;
-        digishieldConsensus.fSimplifiedRewards = true;
+        digishieldConsensus.nHeightEffective = 60;
         digishieldConsensus.fDigishieldDifficultyCalculation = true;
-        digishieldConsensus.nPowTargetTimespan = 60; // post-digishield: 1 minute
-        digishieldConsensus.nCoinbaseMaturity = 240;
+        digishieldConsensus.nPowTargetTimespan = 60; // Kratom: retarget window = 1 minute (every block)
 
-        // Blocks 371337+ are AuxPoW
-        auxpowConsensus = digishieldConsensus;
-        auxpowConsensus.nHeightEffective = 371337;
-        auxpowConsensus.fAllowLegacyBlocks = false;
+        // Kratom: height 145000+ (COINBASE_MATURITY_SWITCH in the original source), coinbase
+        // maturity extends from 30 to 240 blocks (COINBASE_MATURITY_NEW = 60*4). Difficulty
+        // algorithm is unchanged from the tier above.
+        matureConsensus = digishieldConsensus;
+        matureConsensus.nHeightEffective = 145000;
+        matureConsensus.nCoinbaseMaturity = 240;
 
-        // Assemble the binary search tree of consensus parameters
+        // Assemble the binary search tree of consensus parameters - 2 real tiers plus this
+        // maturity-only tier, no AuxPoW tier (see note above).
         pConsensusRoot = &digishieldConsensus;
         digishieldConsensus.pLeft = &consensus;
-        digishieldConsensus.pRight = &auxpowConsensus;
+        digishieldConsensus.pRight = &matureConsensus;
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -149,20 +165,25 @@ public:
         pchMessageStart[1] = 0xc0;
         pchMessageStart[2] = 0xc0;
         pchMessageStart[3] = 0xc0;
-        nDefaultPort = 22556;
+        nDefaultPort = 19457; // Kratom's real mainnet port (was Dogecoin's 22556)
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock(1386325540, 99943, 0x1e0ffff0, 1, 88 * COIN);
+        // Kratom's real genesis block (main.cpp/LoadBlockIndex): same pubkey script and nBits
+        // Dogecoin's own genesis used (Kratom's source is a direct fork, never changed these),
+        // but its own pszTimestamp/nTime/nNonce, so it hashes to a different block.
+        genesis = CreateGenesisBlock("Coba3", CScript() << ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9") << OP_CHECKSIG, 1399728188, 674115, 0x1e0ffff0, 1, 88 * COIN);
 
         consensus.hashGenesisBlock = genesis.GetHash();
         digishieldConsensus.hashGenesisBlock = consensus.hashGenesisBlock;
-        auxpowConsensus.hashGenesisBlock = consensus.hashGenesisBlock;
-        assert(consensus.hashGenesisBlock == uint256S("0x1a91e3dace36e2be3bf030a65679fe821aa1d6ef92e7c9902eb318182c355691"));
-        assert(genesis.hashMerkleRoot == uint256S("0x5b2a3f53f605d62c53e62932dac6925e3d74afa5a4b459745c36d42d0ed26a69"));
+        matureConsensus.hashGenesisBlock = consensus.hashGenesisBlock;
+        assert(consensus.hashGenesisBlock == uint256S("0x0ad6280cff3cc68b209ef97d4414a9adb976a9afefcb2829c5fceb37e7a83584"));
+        assert(genesis.hashMerkleRoot == uint256S("0x06920c237bccedeea4ffb3f5f67ee24e1600d49797ee723e78c6f8fd35ef9b06"));
 
-        // Note that of those with the service bits flag, most only support a subset of possible options
-        vSeeds.push_back(CDNSSeedData("multidoge.org", "seed.multidoge.org", true));
-        vSeeds.push_back(CDNSSeedData("multidoge.org", "seed2.multidoge.org"));
+        // Kratom's only known DNS seed (from Kratom/src/net.cpp strMainNetDNSSeed). Dogecoin's
+        // own multidoge.org seeds and fixed-seed IP list (below) are real Dogecoin peers on a
+        // completely different chain - connecting to them would just get us rejected (same
+        // network magic 0xc0c0c0c0, but incompatible genesis), so they're dropped, not kept.
+        vSeeds.push_back(CDNSSeedData("kratom.pw", "seed.kratom.pw"));
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,30);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,22);
@@ -170,49 +191,28 @@ public:
         base58Prefixes[EXT_PUBLIC_KEY] = boost::assign::list_of(0x02)(0xfa)(0xca)(0xfd).convert_to_container<std::vector<unsigned char> >();
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x02)(0xfa)(0xc3)(0x98).convert_to_container<std::vector<unsigned char> >();
 
-        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
+        // No known Kratom fixed-seed IPs - Dogecoin's pnSeed6_main list is real Dogecoin peers,
+        // not Kratom's, so it's dropped rather than kept as dead/misleading weight.
+        vFixedSeeds.clear();
 
         fMiningRequiresPeers = true;
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;
         fMineBlocksOnDemand = false;
 
+        // Only the genesis checkpoint is known for Kratom's real chain (matches
+        // Kratom/src/checkpoints.cpp, which likewise only hardcodes height 0) - Dogecoin's own
+        // checkpoint list belongs to a different chain and would hard-reject the real Kratom
+        // chain the moment it reached any of those heights with different block content.
         checkpointData = (CCheckpointData) {
             boost::assign::map_list_of
-            (      0, uint256S("0x1a91e3dace36e2be3bf030a65679fe821aa1d6ef92e7c9902eb318182c355691"))
-            ( 104679, uint256S("0x35eb87ae90d44b98898fec8c39577b76cb1eb08e1261cfc10706c8ce9a1d01cf"))
-            ( 145000, uint256S("0xcc47cae70d7c5c92828d3214a266331dde59087d4a39071fa76ddfff9b7bde72"))
-            ( 371337, uint256S("0x60323982f9c5ff1b5a954eac9dc1269352835f47c2c5222691d80f0d50dcf053"))
-            ( 450000, uint256S("0xd279277f8f846a224d776450aa04da3cf978991a182c6f3075db4c48b173bbd7"))
-            ( 771275, uint256S("0x1b7d789ed82cbdc640952e7e7a54966c6488a32eaad54fc39dff83f310dbaaed"))
-            ( 1000000, uint256S("0x6aae55bea74235f0c80bd066349d4440c31f2d0f27d54265ecd484d8c1d11b47"))
-            ( 1250000, uint256S("0x00c7a442055c1a990e11eea5371ca5c1c02a0677b33cc88ec728c45edc4ec060"))
-            ( 1500000, uint256S("0xf1d32d6920de7b617d51e74bdf4e58adccaa582ffdc8657464454f16a952fca6"))
-            ( 1750000, uint256S("0x5c8e7327984f0d6f59447d89d143e5f6eafc524c82ad95d176c5cec082ae2001"))
-            ( 2000000, uint256S("0x9914f0e82e39bbf21950792e8816620d71b9965bdbbc14e72a95e3ab9618fea8"))
-            ( 2031142, uint256S("0x893297d89afb7599a3c571ca31a3b80e8353f4cf39872400ad0f57d26c4c5d42"))
-            ( 2250000, uint256S("0x0a87a8d4e40dca52763f93812a288741806380cd569537039ee927045c6bc338"))
-            ( 2510150, uint256S("0x77e3f4a4bcb4a2c15e8015525e3d15b466f6c022f6ca82698f329edef7d9777e"))
-            ( 2750000, uint256S("0xd4f8abb835930d3c4f92ca718aaa09bef545076bd872354e0b2b85deefacf2e3"))
-            ( 3000000, uint256S("0x195a83b091fb3ee7ecb56f2e63d01709293f57f971ccf373d93890c8dc1033db"))
-            ( 3250000, uint256S("0x7f3e28bf9e309c4b57a4b70aa64d3b2ea5250ae797af84976ddc420d49684034"))
-            ( 3500000, uint256S("0xeaa303b93c1c64d2b3a2cdcf6ccf21b10cc36626965cc2619661e8e1879abdfb"))
-            ( 3606083, uint256S("0x954c7c66dee51f0a3fb1edb26200b735f5275fe54d9505c76ebd2bcabac36f1e"))
-            ( 3854173, uint256S("0xe4b4ecda4c022406c502a247c0525480268ce7abbbef632796e8ca1646425e75"))
-            ( 3963597, uint256S("0x2b6927cfaa5e82353d45f02be8aadd3bfd165ece5ce24b9bfa4db20432befb5d"))
-            ( 4303965, uint256S("0xed7d266dcbd8bb8af80f9ccb8deb3e18f9cc3f6972912680feeb37b090f8cee0"))
-            ( 5050000, uint256S("0xe7d4577405223918491477db725a393bcfc349d8ee63b0a4fde23cbfbfd81dea"))
+            ( 0, uint256S("0x0ad6280cff3cc68b209ef97d4414a9adb976a9afefcb2829c5fceb37e7a83584"))
         };
 
-        chainTxData = ChainTxData{
-            // Data as of block e7d4577405223918491477db725a393bcfc349d8ee63b0a4fde23cbfbfd81dea (height 5050000).
-            // Tx estimate based on average between 2023-01-16 (92752025 at 4556625) and 2024-01-16 (226128837 at 5050000)
-            1705383360, // * UNIX timestamp of last checkpoint block
-            226128837,   // * total number of transactions between genesis and last checkpoint
-                        //   (the tx=... number in the SetBestChain debug.log lines)
-            4.23        // * estimated number of transactions per second after checkpoint
-                        // (226128837 - 92752025) / 31536000 = 4.2293509
-        };
+        // No real tx-volume estimate available for Kratom - zeroed rather than reusing
+        // Dogecoin's own figures, which would just be wrong (only affects the sync progress
+        // estimate, not consensus).
+        chainTxData = ChainTxData{ 0, 0, 0 };
     }
 };
 static CMainParams mainParams;

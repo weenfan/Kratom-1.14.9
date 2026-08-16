@@ -46,8 +46,11 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
         return nProofOfWorkLimit;
     }
 
-    // Only change once per difficulty adjustment interval
-    bool fNewDifficultyProtocol = (pindexLast->nHeight >= 145000);
+    // Only change once per difficulty adjustment interval.
+    // Kratom: driven by params.fDigishieldDifficultyCalculation (already height-selected by
+    // the caller via chainparams' consensus tree) rather than a hardcoded height - Dogecoin's
+    // own switch height (145000) doesn't apply here, Kratom's real switch is height 60.
+    bool fNewDifficultyProtocol = params.fDigishieldDifficultyCalculation;
     const int64_t difficultyAdjustmentInterval = fNewDifficultyProtocol
                                                  ? 1
                                                  : params.DifficultyAdjustmentInterval();
