@@ -151,8 +151,8 @@ void setupAmountWidget(QLineEdit *widget, QWidget *parent)
 
 bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
 {
-    // return if URI is not valid or is no dogecoin: URI
-    if(!uri.isValid() || uri.scheme() != QString("dogecoin"))
+    // return if URI is not valid or is no kratom: URI
+    if(!uri.isValid() || uri.scheme() != QString("kratom"))
         return false;
 
     SendCoinsRecipient rv;
@@ -212,13 +212,13 @@ bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
 
 bool parseBitcoinURI(QString uri, SendCoinsRecipient *out)
 {
-    // Convert dogecoin:// to dogecoin:
+    // Convert kratom:// to kratom:
     //
-    //    Cannot handle this later, because dogecoin:// will cause Qt to see the part after // as host,
+    //    Cannot handle this later, because kratom:// will cause Qt to see the part after // as host,
     //    which will lower-case it (and thus invalidate the address).
-    if(uri.startsWith("dogecoin://", Qt::CaseInsensitive))
+    if(uri.startsWith("kratom://", Qt::CaseInsensitive))
     {
-        uri.replace(0, 11, "dogecoin:");
+        uri.replace(0, 9, "kratom:");
     }
     QUrl uriInstance(uri);
     return parseBitcoinURI(uriInstance, out);

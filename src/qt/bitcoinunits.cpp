@@ -45,11 +45,16 @@ QString BitcoinUnits::name(int unit)
 {
     switch(unit)
     {
-    case MBTC: return QString("MDOGE");
-    case kBTC: return QString("kDOGE");
-    case BTC: return QString("DOGE");
-    case mBTC: return QString("mDOGE");
-    case uBTC: return QString::fromUtf8("μDOGE");
+    // Kratom's own real source never had a multi-denomination display (this whole
+    // BitcoinUnits feature postdates it) - its only precedent is the plain unit name
+    // "Kratoms" (bitcoinunits.cpp equivalent in Kratom/src/qt/bitcoinunits.cpp). "KRAT"
+    // here is an invented short form for the M/k/m/u-prefixed variants, not sourced -
+    // change it if you want something else.
+    case MBTC: return QString("MKRAT");
+    case kBTC: return QString("kKRAT");
+    case BTC: return QString("KRAT");
+    case mBTC: return QString("mKRAT");
+    case uBTC: return QString::fromUtf8("μKRAT");
     default: return QString("???");
     }
 }
@@ -58,11 +63,11 @@ QString BitcoinUnits::description(int unit)
 {
     switch(unit)
     {
-    case MBTC: return QString("Mega-Dogecoins (1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
-    case kBTC: return QString("Kilo-Dogecoins (1" THIN_SP_UTF8 "000)");
-    case BTC: return QString("Dogecoins");
-    case mBTC: return QString("Milli-Dogecoins (1 / 1" THIN_SP_UTF8 "000)");
-    case uBTC: return QString("Micro-Dogecoins (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+    case MBTC: return QString("Mega-Kratoms (1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+    case kBTC: return QString("Kilo-Kratoms (1" THIN_SP_UTF8 "000)");
+    case BTC: return QString("Kratoms");
+    case mBTC: return QString("Milli-Kratoms (1 / 1" THIN_SP_UTF8 "000)");
+    case uBTC: return QString("Micro-Kratoms (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
     default: return QString("???");
     }
 }

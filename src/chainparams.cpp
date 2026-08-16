@@ -185,9 +185,14 @@ public:
         // network magic 0xc0c0c0c0, but incompatible genesis), so they're dropped, not kept.
         vSeeds.push_back(CDNSSeedData("kratom.pw", "seed.kratom.pw"));
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,30);
+        // Kratom's real address-format bytes (Kratom/src/base58.h): PUBKEY_ADDRESS=45,
+        // SCRIPT_ADDRESS=22 (same value Dogecoin already uses, coincidence),
+        // SECRET_KEY(WIF)=PUBKEY_ADDRESS+128=173. No real Kratom precedent for
+        // EXT_PUBLIC_KEY/EXT_SECRET_KEY (its 2014 source predates BIP32/HD wallets
+        // entirely) - left as Dogecoin's own arbitrary-but-valid bytes.
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,45);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,22);
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,158);
+        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,173);
         base58Prefixes[EXT_PUBLIC_KEY] = boost::assign::list_of(0x02)(0xfa)(0xca)(0xfd).convert_to_container<std::vector<unsigned char> >();
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x02)(0xfa)(0xc3)(0x98).convert_to_container<std::vector<unsigned char> >();
 
