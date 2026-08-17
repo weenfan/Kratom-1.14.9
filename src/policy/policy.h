@@ -15,12 +15,14 @@
 
 class CCoinsViewCache;
 
-/** Recommended transaction fee by Dogecoin Core developers
+/** Recommended transaction fee
   *
   * All fee defaults used throughout the client derive their
-  * value from this base default.
+  * value from this base default. Kratom: matches the real chain's
+  * CTransaction::nMinTxFee (1 * COIN = 1 KTO), not Dogecoin's own
+  * COIN / 100 default -- see Kratom/src/main.cpp.
   */
-static const CAmount RECOMMENDED_MIN_TX_FEE = COIN / 100;
+static const CAmount RECOMMENDED_MIN_TX_FEE = COIN;
 
 /** Default for -blockmaxsize, which controls the maximum size of block the mining code will create **/
 static const unsigned int DEFAULT_BLOCK_MAX_SIZE = 750000;

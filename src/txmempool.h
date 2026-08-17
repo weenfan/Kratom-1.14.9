@@ -46,7 +46,12 @@ static const int FEEFILE_MIN_COMPAT_VERSION_WRITER = 1140700; // 1.14.7.0
 
 inline double AllowFreeThreshold()
 {
-    return COIN * 144 / 250;
+    // Kratom: real chain's threshold is 100 * COIN * 1440 / 250 (main.h) --
+    // 1440 blocks/day for Kratom's 1-minute block target, not Bitcoin's
+    // classic 144 blocks/day @ 10-minute blocks. Needs real, decently-aged
+    // (many-confirmation) coin-value to clear the free bar; fresh/low-conf
+    // inputs fall back to the flat RECOMMENDED_MIN_TX_FEE (1 KTO).
+    return 100 * COIN * 1440 / 250;
 }
 
 inline bool AllowFree(double dPriority)
