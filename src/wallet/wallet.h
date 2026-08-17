@@ -111,15 +111,19 @@ static const CAmount MIN_CHANGE_FEE_MULTIPLIER = 2;
 //! Default for -spendzeroconfchange
 static const bool DEFAULT_SPEND_ZEROCONF_CHANGE = true;
 //! Default for -sendfreetransactions
-static const bool DEFAULT_SEND_FREE_TRANSACTIONS = false;
+//! Kratom: real chain always allows a well-aged/well-confirmed transaction
+//! through free (main.cpp GetMinFee()) -- not an opt-in setting.
+static const bool DEFAULT_SEND_FREE_TRANSACTIONS = true;
 //! Default for -walletrejectlongchains
 static const bool DEFAULT_WALLET_REJECT_LONG_CHAINS = false;
 //! -txconfirmtarget default
 static const unsigned int DEFAULT_TX_CONFIRM_TARGET = 6;
 //! -walletrbf default
 static const bool DEFAULT_WALLET_RBF = false;
-//! Largest (in bytes) free transaction we're willing to create
-static const unsigned int MAX_FREE_TRANSACTION_CREATE_SIZE = 0;
+//! Largest (in bytes) free transaction we're willing to create.
+//! Kratom: matches the real chain's own threshold (main.cpp GetMinFee():
+//! nBytes < 10000 -> nMinFee = 0), not Dogecoin's disabled (0) value.
+static const unsigned int MAX_FREE_TRANSACTION_CREATE_SIZE = 10000;
 static const bool DEFAULT_WALLETBROADCAST = true;
 static const bool DEFAULT_DISABLE_WALLET = false;
 //! if set, all keys will be derived by using BIP32

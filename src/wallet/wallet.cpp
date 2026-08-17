@@ -2690,13 +2690,14 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                 else
                     nPriority = MINIMUM;
 
-                // Can we complete this as a free transaction?
-                if (fSendFreeTransactions && nBytes <= MAX_FREE_TRANSACTION_CREATE_SIZE)
+                // Can we complete this as a free transaction? Kratom: real chain doesn't
+                // gate this behind an opt-in flag or a mempool-derived smart-priority
+                // estimate -- well-aged/well-confirmed inputs just go free outright once
+                // they clear AllowFree(), same as the original client (main.cpp
+                // CTransaction::GetMinFee(): nBytes < 10000 -> nMinFee = 0).
+                if (fSendFreeTransactions && nBytes < 10000)
                 {
-                    // Not enough fee: enough priority?
-                    double dPriorityNeeded = mempool.estimateSmartPriority(currentConfirmationTarget);
-                    // Require at least hard-coded AllowFree.
-                    if (dPriority >= dPriorityNeeded && AllowFree(dPriority))
+                    if (AllowFree(dPriority))
                         break;
                 }
 

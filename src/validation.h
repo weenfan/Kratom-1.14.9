@@ -133,7 +133,11 @@ static const int64_t BLOCK_DOWNLOAD_TIMEOUT_BASE = 5000000;
 /** Additional block download timeout per parallel downloading peer (i.e. 2.5 min) */
 static const int64_t BLOCK_DOWNLOAD_TIMEOUT_PER_PEER = 2500000;
 
-static const unsigned int DEFAULT_LIMITFREERELAY = 0;
+// Kratom: real chain's own default was 15 (main.cpp: GetArg("-limitfreerelay", 15)),
+// not Dogecoin's later 0 (which disables free-tx relay outright and, combined with
+// DEFAULT_SEND_FREE_TRANSACTIONS=true, would otherwise hard-fail wallet init --
+// see the -limitfreerelay<=0 check in CWallet::ParameterInteraction).
+static const unsigned int DEFAULT_LIMITFREERELAY = 15;
 static const bool DEFAULT_RELAYPRIORITY = true;
 static const int64_t DEFAULT_MAX_TIP_AGE = 24 * 60 * 60;
 /** Maximum age of our tip in seconds for us to be considered current for fee estimation */
