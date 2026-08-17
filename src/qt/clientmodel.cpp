@@ -145,7 +145,20 @@ double ClientModel::getVerificationProgress(const CBlockIndex *tipIn) const
         LOCK(cs_main);
         tip = chainActive.Tip();
     }
-    return GuessVerificationProgress(Params().TxData(), tip);
+    if (!tip)
+        return 0.0;
+
+    // Kratom: progress against the real best-known header height from connected
+    // peers (pindexBestHeader, tracked live in validation.cpp) rather than the
+    // upstream Dogecoin ChainTxData tx-rate extrapolation -- that table is a
+    // hardcoded historical estimate calibrated to Dogecoin's own chain activity
+    // and goes stale/misleading on a different, lower-activity chain like this
+    // one. Headers-first sync already gives us the real total from peers, same
+    // as the original Kratom/Dogecoin client did, so just use it directly.
+    int headerHeight = getHeaderTipHeight();
+    if (headerHeight <= 0 || tip->nHeight >= headerHeight)
+        return 1.0;
+    return (double)tip->nHeight / (double)headerHeight;
 }
 
 void ClientModel::updateTimer()
