@@ -2881,15 +2881,27 @@ bool CWallet::AddAccountingEntry(const CAccountingEntry& acentry, CWalletDB *pwa
     return true;
 }
 
+// Kratom: real chain's minimum fee isn't a smooth per-byte rate -- it's the
+// classic Bitcoin/Kratom step formula, "(1 + nBytes/1000) * nBaseFee"
+// (Kratom/src/main.cpp CTransaction::GetMinFee()). Any non-empty tx under
+// 1000 bytes always costs one full base-fee unit (never scaled down by
+// size, e.g. a 226-byte tx still costs the full 1 KTO, not 0.226 KTO),
+// stepping up by another full unit per additional whole KB -- not
+// CFeeRate::GetFee()'s linear "rate * bytes / 1000".
+static CAmount GetKratomStepFee(unsigned int nTxBytes, CAmount nBaseFee)
+{
+    return (1 + (int64_t)nTxBytes / 1000) * nBaseFee;
+}
+
 CAmount CWallet::GetRequiredFee(const CMutableTransaction& tx, unsigned int nTxBytes)
 {
     // Dogecoin: Add an increased fee for each output that is lower than the discard threshold
-    return std::max(minTxFee.GetFee(nTxBytes) + GetDogecoinDustFee(tx.vout, discardThreshold), ::minRelayTxFeeRate.GetFee(nTxBytes));
+    return std::max(GetKratomStepFee(nTxBytes, minTxFee.GetFeePerK()) + GetDogecoinDustFee(tx.vout, discardThreshold), ::minRelayTxFeeRate.GetFee(nTxBytes));
 }
 
 CAmount CWallet::GetRequiredFee(unsigned int nTxBytes)
 {
-    return std::max(minTxFee.GetFee(nTxBytes), ::minRelayTxFeeRate.GetFee(nTxBytes));
+    return std::max(GetKratomStepFee(nTxBytes, minTxFee.GetFeePerK()), ::minRelayTxFeeRate.GetFee(nTxBytes));
 }
 
 CAmount CWallet::GetMinimumFee(const CMutableTransaction& tx, unsigned int nTxBytes, unsigned int nConfirmTarget, const CTxMemPool& pool)
